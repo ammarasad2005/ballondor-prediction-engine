@@ -169,11 +169,14 @@ SEASON_PATTERN = re.compile(r"^(\d{4})[\-–/](\d{2,4})$")
 
 def normalize_season(s) -> Optional[str]:
     """Normalize a season string like '2022-23' -> '2022-2023' (full year).
+    Also strips Wikipedia footnote markers like '2003-04[437]' first.
     Returns None if not a season format.
     """
     if s is None or (isinstance(s, float) and pd.isna(s)):
         return None
     s = str(s).strip()
+    # Strip footnote markers like '[437]', '[note 1]' FIRST
+    s = FOOTNOTE_RE.sub("", s).strip()
     m = SEASON_PATTERN.match(s)
     if not m:
         # Single year (classical era) — return as-is
@@ -228,45 +231,73 @@ def parse_minutes(v) -> Optional[int]:
 def find_senior_career_table(soup: BeautifulSoup):
     """Find the 'Senior career' stats table on a player's Wikipedia page.
 
-    Player pages have a structure like:
-      <table class="wikitable">
-        <caption>Senior career*</caption>  OR  preceding <th>Senior career*</th>
-        ...
-      </table>
+    Player pages have a variety of structures across eras:
+      - Modern pages: caption "Senior career*" with columns
+        Years/Team/League{Division,Apps,Goals}/Continental{...}
+      - Classical-era pages: caption "Appearances and goals by club,
+        season and competition" with columns
+        Club/Season/League{Division,Apps}/National cup{Apps}/...
+      - Some pages: header row with "Years" / "Team" / "Apps" / "Goals"
 
-    Or sometimes the table has a heading row "Years" / "Team" / "Apps" / "Goals".
+    Strategy: try multiple detection patterns in order of reliability.
+    Note: some pages have stats tables WITHOUT the "wikitable" CSS class
+    (older pages use plain <table> with inline styling), so we search
+    all tables, not just wikitables.
     """
-    # Strategy 1: look for a table with caption containing "Senior career"
-    for tbl in soup.find_all("table", class_=lambda c: c and "wikitable" in c):
+    # Get ALL tables, then filter to those that look like career tables.
+    # We exclude obvious non-career tables: infoboxes, navboxes, etc.
+    def is_career_candidate(tbl) -> bool:
+        cls = tbl.get("class") or []
+        # Exclude navboxes
+        if "navbox" in cls or "nowraplinks" in cls:
+            return False
+        # Exclude infoboxes (they have player bio info, not stats)
+        if "infobox" in cls:
+            return False
+        return True
+
+    all_tables = [t for t in soup.find_all("table") if is_career_candidate(t)]
+
+    # Strategy 1: caption containing "senior career" OR "appearances and goals"
+    for tbl in all_tables:
         cap = tbl.find("caption")
-        if cap and "senior career" in cap.get_text(strip=True).lower():
-            return tbl
-        # Or look at the first row's first cell — sometimes it's "Senior career*"
+        if cap:
+            cap_text = cap.get_text(strip=True).lower()
+            if "senior career" in cap_text:
+                return tbl
+            if "appearances and goals by club" in cap_text:
+                return tbl
+            if "appearances and goals by national" in cap_text:
+                continue   # this is the international table
+        # Or look at the first row's first cell
         first_tr = tbl.find("tr")
         if first_tr:
             first_th = first_tr.find("th") or first_tr.find("td")
-            if first_th and "senior career" in first_th.get_text(strip=True).lower():
-                return tbl
+            if first_th:
+                first_text = first_th.get_text(strip=True).lower()
+                if "senior career" in first_text:
+                    return tbl
 
-    # Strategy 2: look for a table whose header row includes "Team" AND "Apps"
-    # This is the most reliable pattern — player career tables always have these.
-    # We want the FIRST such table (senior career comes before youth/intl tables).
-    for tbl in soup.find_all("table", class_=lambda c: c and "wikitable" in c):
+    # Strategy 2: header row containing (Years OR Season OR Club) AND
+    # (Apps OR Appearances OR Goals OR Division).
+    intl_table = find_international_career_table(soup)
+    for tbl in all_tables:
+        if tbl is intl_table:
+            continue
         ths = tbl.find_all("th")
         if not ths:
             continue
-        header_text = " ".join(th.get_text(strip=True) for th in ths[:8]).lower()
-        # Senior career tables have columns like:
-        #   "Years Team Apps Goals" (basic)
-        #   "Years Team League Division Apps Goals Other Apps Goals"
-        # Look for the pattern: "Years" or "Season" + "Team" + (Apps or Goals)
-        has_years = "years" in header_text or "season" in header_text
-        has_team = "team" in header_text or "club" in header_text
-        has_apps_or_goals = "apps" in header_text or "goals" in header_text or "appearances" in header_text
-        if has_years and has_team and has_apps_or_goals:
-            # Exclude international career tables (they're typically separate and
-            # labeled with "International goals" or year ranges like "2005-2024")
-            if "international" in header_text or "national team" in header_text:
+        header_text = " ".join(th.get_text(strip=True) for th in ths[:12]).lower()
+        header_text_clean = re.sub(r"\[[^\]]*\]", "", header_text)
+        has_years_or_season = ("years" in header_text_clean or "season" in header_text_clean)
+        has_team_or_club = ("team" in header_text_clean or "club" in header_text_clean)
+        has_apps_or_goals = (
+            "apps" in header_text_clean or "appearances" in header_text_clean or
+            "goals" in header_text_clean or "division" in header_text_clean or
+            "matches" in header_text_clean
+        )
+        if has_years_or_season and has_team_or_club and has_apps_or_goals:
+            if "international" in header_text_clean or "national team" in header_text_clean:
                 continue
             return tbl
 
@@ -274,23 +305,30 @@ def find_senior_career_table(soup: BeautifulSoup):
 
 
 def find_international_career_table(soup: BeautifulSoup):
-    """Find the international career stats table (separate from senior club career).
+    """Find the international career stats table (separate from senior club career)."""
+    def is_candidate(tbl) -> bool:
+        cls = tbl.get("class") or []
+        if "navbox" in cls or "nowraplinks" in cls or "infobox" in cls:
+            return False
+        return True
+    all_tables = [t for t in soup.find_all("table") if is_candidate(t)]
 
-    International tables usually have header "Year" / "Team" / "Apps" / "Goals"
-    with team = national team name. They often appear AFTER the senior career table.
-    """
-    for tbl in soup.find_all("table", class_=lambda c: c and "wikitable" in c):
+    # Strategy 1: caption
+    for tbl in all_tables:
+        cap = tbl.find("caption")
+        if cap:
+            cap_text = cap.get_text(strip=True).lower()
+            if "appearances and goals by national" in cap_text:
+                return tbl
+            if "international" in cap_text and "goals" in cap_text:
+                return tbl
+    # Strategy 2: header
+    for tbl in all_tables:
         ths = tbl.find_all("th")
         if not ths:
             continue
         header_text = " ".join(th.get_text(strip=True) for th in ths[:8]).lower()
-        # International career table headers vary but usually include "International"
-        # OR they have a Year column with very wide range like 2003-2024
-        if "international" in header_text:
-            return tbl
-        # Also check the caption
-        cap = tbl.find("caption")
-        if cap and "international" in cap.get_text(strip=True).lower():
+        if "national team" in header_text or "international career" in header_text:
             return tbl
     return None
 
@@ -321,18 +359,24 @@ def parse_career_table(tbl) -> list[dict]:
     # Flatten multi-index columns
     if isinstance(df.columns, pd.MultiIndex):
         new_cols = []
-        for top, bottom in df.columns:
-            top_s = str(top).strip() if top is not None else ""
-            bottom_s = str(bottom).strip() if bottom is not None else ""
-            if "Unnamed" in bottom_s:
-                new_cols.append(top_s)
-            elif "Unnamed" in top_s:
-                new_cols.append(bottom_s)
-            elif top_s == bottom_s:
-                new_cols.append(top_s)
+        for col_tuple in df.columns:
+            # Handle 2-level and 3-level multi-indexes
+            parts = []
+            for level in col_tuple:
+                s = str(level).strip() if level is not None else ""
+                if "Unnamed" in s or s == "nan" or s == "":
+                    continue
+                parts.append(s)
+            if not parts:
+                new_cols.append("")
+            elif len(parts) == 1:
+                new_cols.append(parts[0])
             else:
-                # Combine like "League Apps" or use just bottom
-                new_cols.append(f"{top_s} {bottom_s}".strip())
+                # If all parts are the same, use just one; else concatenate
+                if all(p == parts[0] for p in parts):
+                    new_cols.append(parts[0])
+                else:
+                    new_cols.append(" ".join(parts).strip())
         df.columns = new_cols
     else:
         df.columns = [str(c).strip() for c in df.columns]
@@ -370,28 +414,40 @@ def parse_career_table(tbl) -> list[dict]:
 
     for c in df.columns:
         c_lower = c.lower()
-        # Continental competition name column (e.g., "Continental Competition")
-        if "continental" in c_lower and ("competition" in c_lower or "cup" in c_lower or "tournament" in c_lower or "name" in c_lower or "type" in c_lower):
+        # Continental competition name column
+        # Note: some pages use "Europe" or "European" instead of "Continental"
+        is_continental = ("continental" in c_lower or "europe" in c_lower)
+        if is_continental and ("competition" in c_lower or "cup" in c_lower or "tournament" in c_lower or "name" in c_lower or "type" in c_lower):
             if continental_competition_col is None:
                 continental_competition_col = c
-        elif "continental" in c_lower and "apps" in c_lower:
-            continental_apps_col = c
-        elif "continental" in c_lower and ("goals" in c_lower or "gls" in c_lower):
-            continental_goals_col = c
-        elif "continental" in c_lower and "assists" in c_lower:
-            continental_assists_col = c
-        elif "continental" in c_lower and "min" in c_lower:
-            continental_minutes_col = c
-        # League columns — must check AFTER continental (else "continental apps" matches "apps")
-        elif "league" in c_lower and ("apps" in c_lower or "appearances" in c_lower or "matches" in c_lower or "mp" in c_lower):
-            league_apps_col = c
+        elif is_continental and ("apps" in c_lower or "appearances" in c_lower or "matches" in c_lower or " mp" in c_lower):
+            if continental_apps_col is None:
+                continental_apps_col = c
+        elif is_continental and ("goals" in c_lower or "gls" in c_lower):
+            if continental_goals_col is None:
+                continental_goals_col = c
+        elif is_continental and "assists" in c_lower:
+            if continental_assists_col is None:
+                continental_assists_col = c
+        elif is_continental and "min" in c_lower:
+            if continental_minutes_col is None:
+                continental_minutes_col = c
+        # League columns — must check AFTER continental
+        elif "league" in c_lower and ("apps" in c_lower or "appearances" in c_lower or "matches" in c_lower or " mp" in c_lower):
+            if league_apps_col is None:
+                league_apps_col = c
         elif "league" in c_lower and ("goals" in c_lower or "gls" in c_lower):
-            league_goals_col = c
+            if league_goals_col is None:
+                league_goals_col = c
         elif "league" in c_lower and "assists" in c_lower:
-            league_assists_col = c
+            if league_assists_col is None:
+                league_assists_col = c
         elif "league" in c_lower and "min" in c_lower:
-            league_minutes_col = c
+            if league_minutes_col is None:
+                league_minutes_col = c
         # Bare columns (no League/Continental prefix) — typically league stats
+        # Only assign if no league_* has been set yet (avoid overwriting real
+        # league columns with bare ones)
         elif league_apps_col is None and c_lower in ("apps", "appearances", "matches", "mp"):
             league_apps_col = c
         elif league_goals_col is None and c_lower in ("goals", "gls"):
@@ -408,7 +464,12 @@ def parse_career_table(tbl) -> list[dict]:
         if season is None:
             continue   # skip header rows or non-season data
 
-        # Skip aggregate rows ("Career total", "Total")
+        # Skip aggregate rows ("Career total", "Total", "Total with Barcelona", etc.)
+        season_str = str(season_raw).strip().lower() if season_raw is not None else ""
+        if "total" in season_str or "career" in season_str:
+            continue
+
+        # Also check the club column for "Total"/"Career total" labels
         if club_col:
             club_val = str(r.get(club_col, "")).strip().lower()
             if "career" in club_val or "total" in club_val:
@@ -448,15 +509,22 @@ def parse_international_table(tbl) -> list[dict]:
     df = df.dropna(how="all").reset_index(drop=True)
     if isinstance(df.columns, pd.MultiIndex):
         new_cols = []
-        for top, bottom in df.columns:
-            top_s = str(top).strip() if top is not None else ""
-            bottom_s = str(bottom).strip() if bottom is not None else ""
-            if "Unnamed" in bottom_s:
-                new_cols.append(top_s)
-            elif "Unnamed" in top_s:
-                new_cols.append(bottom_s)
+        for col_tuple in df.columns:
+            parts = []
+            for level in col_tuple:
+                s = str(level).strip() if level is not None else ""
+                if "Unnamed" in s or s == "nan" or s == "":
+                    continue
+                parts.append(s)
+            if not parts:
+                new_cols.append("")
+            elif len(parts) == 1:
+                new_cols.append(parts[0])
             else:
-                new_cols.append(bottom_s if bottom_s else top_s)
+                if all(p == parts[0] for p in parts):
+                    new_cols.append(parts[0])
+                else:
+                    new_cols.append(" ".join(parts).strip())
         df.columns = new_cols
     else:
         df.columns = [str(c).strip() for c in df.columns]
