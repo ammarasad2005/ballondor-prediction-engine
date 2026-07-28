@@ -1,0 +1,261 @@
+# =============================================================================
+# Feature Registry — Ballon d'Or Prediction Engine
+# =============================================================================
+# Per Architecture Blueprint §4.4 + Key Focus Areas §7, every feature must
+# declare its era availability so the modeling layer can automatically select
+# the right feature subset per era without ad hoc conditionals scattered
+# through code.
+#
+# Era availability tags:
+#   modern_only:                Only available for modern era (2014-15+).
+#                               Includes xG/xA (currently a known gap per
+#                               Key Focus Areas §9 — fbref Cloudflare-blocked).
+#   all_eras:                   Available for all eras 1956-present.
+#   classical_proxy_available:  Available for all eras, but the classical-era
+#                               version is a proxy (e.g., goals-only instead
+#                               of goals+xG). Used to maintain feature
+#                               continuity across the era boundary.
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# Family 1: Individual production (position-adjusted, per-90 normalized)
+# -----------------------------------------------------------------------------
+individual_production:
+  league_goals:
+    description: "Total goals in domestic league during eval period"
+    era: all_eras
+    type: int
+    unit: goals
+    imputation: none   # leave NaN if missing; never silently impute
+
+  league_assists:
+    description: "Total assists in domestic league during eval period"
+    era: all_eras
+    type: int
+    unit: assists
+    imputation: none
+    notes: "Assists notoriously poorly recorded pre-1990s. Missing stays NaN per Key Focus Areas §9."
+
+  league_apps:
+    description: "Total appearances in domestic league during eval period"
+    era: all_eras
+    type: int
+    unit: appearances
+
+  league_minutes:
+    description: "Total minutes played in domestic league during eval period"
+    era: all_eras
+    type: int
+    unit: minutes
+    notes: "Minutes often unavailable pre-1990s. Missing stays NaN."
+
+  continental_goals:
+    description: "Total goals in continental club competition (UCL/UEL) during eval period"
+    era: all_eras
+    type: int
+    unit: goals
+
+  continental_assists:
+    description: "Total assists in continental club competition during eval period"
+    era: all_eras
+    type: int
+    unit: assists
+
+  continental_apps:
+    description: "Total appearances in continental club competition during eval period"
+    era: all_eras
+    type: int
+    unit: appearances
+
+  league_goals_per90:
+    description: "League goals per 90 minutes played"
+    era: all_eras
+    type: float
+    derived_from: [league_goals, league_minutes]
+    notes: "NaN when league_minutes is missing (classical era)."
+
+  league_assists_per90:
+    description: "League assists per 90 minutes played"
+    era: all_eras
+    type: float
+    derived_from: [league_assists, league_minutes]
+
+  continental_goals_per90:
+    description: "Continental goals per 90 minutes"
+    era: all_eras
+    type: float
+    derived_from: [continental_goals, continental_minutes]
+
+  total_goals:
+    description: "Goals across all club competitions during eval period"
+    era: all_eras
+    type: int
+    derived_from: [league_goals, continental_goals]
+
+  total_assists:
+    description: "Assists across all club competitions during eval period"
+    era: all_eras
+    type: int
+    derived_from: [league_assists, continental_assists]
+
+  total_apps:
+    description: "Appearances across all club competitions"
+    era: all_eras
+    type: int
+    derived_from: [league_apps, continental_apps]
+
+  international_goals:
+    description: "Goals scored for national team during eval period"
+    era: all_eras
+    type: int
+
+  international_apps:
+    description: "Appearances for national team during eval period"
+    era: all_eras
+    type: int
+
+  xg:
+    description: "Expected goals (modern era only — fbref blocked, permanent gap)"
+    era: modern_only
+    type: float
+    status: unavailable
+    notes: "Cloudflare-blocked. Documented per Key Focus Areas §9."
+
+  xa:
+    description: "Expected assists (modern era only — fbref blocked, permanent gap)"
+    era: modern_only
+    type: float
+    status: unavailable
+
+# -----------------------------------------------------------------------------
+# Family 2: Trophy/team success
+# -----------------------------------------------------------------------------
+trophy_team_success:
+  ucl_winner:
+    description: "Won UEFA Champions League / European Cup in eval period"
+    era: all_eras
+    type: bool
+
+  ucl_runner_up:
+    description: "Lost UCL final in eval period"
+    era: all_eras
+    type: bool
+
+  domestic_league_winner:
+    description: "Won domestic league title in eval period"
+    era: all_eras
+    type: bool
+
+  domestic_league_runner_up:
+    description: "Finished 2nd in domestic league in eval period"
+    era: all_eras
+    type: bool
+
+# -----------------------------------------------------------------------------
+# Family 3: International tournament boost
+# -----------------------------------------------------------------------------
+international_tournament:
+  world_cup_winner:
+    description: "Won FIFA World Cup in eval period (calendar year)"
+    era: all_eras
+    type: bool
+
+  world_cup_runner_up:
+    description: "Lost World Cup final in eval period"
+    era: all_eras
+    type: bool
+
+  euro_winner:
+    description: "Won UEFA European Championship in eval period"
+    era: all_eras
+    type: bool
+
+  copa_america_winner:
+    description: "Won Copa América in eval period"
+    era: all_eras
+    type: bool
+
+  international_tournament_year:
+    description: "True if eval period contains a major international tournament"
+    era: all_eras
+    type: bool
+    notes: "Captures the documented World Cup year boost in Ballon d'Or voting."
+
+# -----------------------------------------------------------------------------
+# Family 4: Availability/durability
+# -----------------------------------------------------------------------------
+availability:
+  total_minutes:
+    description: "Total minutes played across all competitions in eval period"
+    era: all_eras
+    type: int
+    derived_from: [league_minutes, continental_minutes]
+
+# -----------------------------------------------------------------------------
+# Family 5: Peer-relative standing (percentile within year's candidate pool)
+# -----------------------------------------------------------------------------
+peer_relative:
+  goals_percentile_in_year:
+    description: "Percentile of total_goals within the year's nominee pool"
+    era: all_eras
+    type: float
+    range: [0.0, 1.0]
+    notes: "Computed per award_year. Handles missing values by ignoring NaN rows."
+
+  assists_percentile_in_year:
+    description: "Percentile of total_assists within the year's nominee pool"
+    era: all_eras
+    type: float
+
+  apps_percentile_in_year:
+    description: "Percentile of total_apps within the year's nominee pool"
+    era: all_eras
+    type: float
+
+  minutes_percentile_in_year:
+    description: "Percentile of total_minutes within the year's nominee pool"
+    era: all_eras
+    type: float
+
+# -----------------------------------------------------------------------------
+# Family 6: Recency-weighted form
+# -----------------------------------------------------------------------------
+recency_form:
+  second_half_goals_share:
+    description: "Fraction of total goals scored in second half of eval period"
+    era: all_eras
+    type: float
+    range: [0.0, 1.0]
+    notes: "0.5 = even split; >0.5 = second-half skew (recency bias indicator). Often NaN — Wikipedia player pages don't split stats by half-season."
+
+# -----------------------------------------------------------------------------
+# Family 7: Narrative/media signal (best-effort, partially manual)
+# -----------------------------------------------------------------------------
+narrative:
+  signature_moment:
+    description: "Flag for iconic individual performance"
+    era: all_eras
+    type: bool
+    notes: "Best-effort, partially manual. Derived from trophy data. Documented per Implementation Plan Phase 2 task 4."
+
+  club_prestige_tier:
+    description: "Club prestige tier (1=elite, 2=strong, 3=mid, 4=small)"
+    era: all_eras
+    type: int
+    range: [1, 4]
+    notes: "Proxy for media-market bias per Key Focus Area §5."
+
+  previous_ballon_dor_winner:
+    description: "True if player won Ballon d'Or in any prior year"
+    era: all_eras
+    type: bool
+    notes: "Per Key Focus Area §3 — must be lagged correctly. Only reflects awards won STRICTLY BEFORE the season being evaluated."
+
+# -----------------------------------------------------------------------------
+# Era tag (attached to every row in features.parquet)
+# -----------------------------------------------------------------------------
+metadata:
+  era_tag:
+    description: "Era classification for this row"
+    type: str
+    values: [classical, pre_merger, fifa_merger, post_split]

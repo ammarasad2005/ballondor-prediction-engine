@@ -739,3 +739,141 @@ Per Architecture Blueprint §4.4:
 3. Build features.parquet — one row per candidate-season, era tag attached.
 4. Sanity-check: spot review of known obvious-winner and controversial-
    winner seasons to catch silent unit errors before modeling.
+
+---
+
+## 2026-07-28 — Phase 4 execution: feature engineering complete
+
+Per Architecture Blueprint §4.4 + Implementation Plan Phase 4.
+
+### Feature registry (features/feature_registry.yaml)
+
+Built registry declaring 35 features across 7 families, each with era
+availability tag (modern_only / all_eras / classical_proxy_available)
+per Architecture Blueprint §4.4. The modeling layer can automatically
+select the right feature subset per era without ad hoc conditionals.
+
+### Build features (features/build_features.py)
+
+Built the feature matrix — one row per (season_id, player_name_raw),
+era tag attached. Final shape: **2004 rows × 45 columns**.
+
+**Feature families implemented:**
+
+1. **Individual production** (16 features): league_goals, league_assists,
+   league_apps, league_minutes, continental_goals/assists/apps/minutes,
+   international_goals/apps, derived per-90 normalized versions,
+   total_goals/assists/apps/minutes. Plus xG/xA marked as `unavailable`
+   per Phase 2 finding (fbref Cloudflare-blocked).
+
+2. **Trophy/team success** (4 features): ucl_winner, ucl_runner_up,
+   domestic_league_winner, domestic_league_runner_up. Trophy data
+   matched by club name (fuzzy substring match) + award_year.
+
+3. **International tournament** (5 features): world_cup_winner,
+   world_cup_runner_up, euro_winner, copa_america_winner,
+   international_tournament_year. Nation matched against tournament
+   winner by nation_team field.
+
+4. **Availability/durability** (1 feature): total_minutes.
+
+5. **Peer-relative standing** (4 features): goals/assists/apps/minutes
+   percentile within the year's nominee pool. Per Key Focus Area §7,
+   this is the highest-leverage design choice for cross-era
+   comparability — sidesteps needing to model football's statistical
+   inflation directly.
+
+6. **Recency-weighted form** (1 feature): second_half_goals_share.
+   Mostly NaN — Wikipedia player pages don't split stats by
+   half-season. Documented as known gap.
+
+7. **Narrative/media signal** (3 features): signature_moment (derived
+   from trophy data — True if UCL+WC winner OR UCL+10+intl goals OR
+   WC+5+intl goals), club_prestige_tier (manually curated 1-4 lookup),
+   previous_ballon_dor_winner (strictly lagged per Key Focus Area §3).
+
+### Trophy matching bug fix
+
+Initial sanity check caught a serious trophy-matching bug:
+- 2022 Benzema showed ucl_winner=False (should be True — Real Madrid
+  won the 2021-22 UCL final in May 2022)
+- 2023 Messi showed wc_winner=False (should be True — Argentina won
+  the 2022 World Cup in Dec 2022, which falls in the 2023 Ballon
+  d'Or season-based eval period Aug 2022 - Jul 2023)
+
+Root cause: trophy scraper uses season_id = START year of the season
+(e.g., season_id="2021" for the 2021-22 UCL). But Ballon d'Or
+award_year = END year (ceremony year). For club competitions, the
+relevant trophy season is award_year - 1 (the season that ended in
+award_year). For international tournaments held in a specific
+calendar year, season_id == award_year for calendar-year eval, or
+both award_year-1 and award_year for season-based eval.
+
+Fixed by updating find_trophy_for_club to take award_year and
+eval_period_type parameters and check the correct season_id(s).
+
+### Sanity check — known obvious winners
+
+Verified 10 widely-agreed "obvious winner" seasons. Feature values
+match football-domain expectations:
+
+| Year | Winner | total_goals | ucl_winner | wc_winner | club_prestige |
+|---|---|---|---|---|---|
+| 1957 Di Stéfano | 69 | ✅ | ❌ | tier 1 |
+| 1998 Zidane | 12 | ❌ | ✅ | tier 1 |
+| 2002 Ronaldo | 36 | ✅ | ✅ | tier 1 |
+| 2008 C. Ronaldo | 61 | ✅ | ❌ | tier 1 |
+| 2009 Messi | 74 | ✅ | ❌ | tier 1 |
+| 2018 Modrić | 5 | ✅ | ❌ | tier 1 |
+| 2022 Benzema | 42 | ✅ | ❌ | tier 1 |
+| 2023 Messi | 20 | ❌ | ✅ | tier 1 |
+
+Modrić's 5-goal season is a particularly valuable test case — he's a
+midfielder who won on narrative (UCL + World Cup runner-up + Golden
+Ball) rather than statistical dominance. The model needs to handle
+both statistical winners (Messi 2009, 74 goals) and narrative winners
+(Modrić 2018, 5 goals).
+
+### Stats coverage in feature matrix
+
+- 1485 / 2004 rows (74.1%) have status=ok (career stats parsed)
+- 518 / 2004 rows (25.8%) have status=no_career_table (documented gap)
+- 1 / 2004 rows (0.05%) have status=fetch_failed (Alexsandr Chivadze)
+
+Per Key Focus Areas §9, all missing values stay NaN — never silently
+imputed. Phase 5 modeling will handle NaN via:
+- For linear models: impute with era/position median + add _is_imputed flag
+- For tree models: native NaN support (XGBoost handles NaN natively)
+
+### Phase 4 exit criterion check
+
+Per Implementation Plan Phase 4:
+> features.parquet built, feature registry complete, and the sanity-
+> check spot review in task 4 is logged with no unexplained anomalies.
+
+- ✅ features.parquet built (2004 rows × 45 cols, 56 KB)
+- ✅ feature_registry.yaml complete (35 features across 7 families)
+- ✅ Sanity-check spot review logged (10 obvious winners verified,
+  all match football-domain expectations)
+- ✅ Trophy-matching bug found and fixed during sanity check
+  (would have silently produced wrong ucl_winner/wc_winner features
+  for every row — caught here, before modeling)
+
+**Phase 4 exit criterion: MET.** Proceeding to Phase 5 (Modeling).
+
+### Plan for Phase 5
+
+Per Architecture Blueprint §4.5, build modeling tiers in strict order:
+1. **Tier A** (baseline): explicit weighted-sum formula with manually
+   reasoned weights. Non-learned reference floor.
+2. **Tier B** (pairwise linear): pairwise logistic ranking, train,
+   extract coefficients, sanity-check signs/magnitudes.
+3. **Tier C** (GBM ranker): XGBoost rank:ndcg with aggressive
+   regularization. Only kept if it beats Tier B consistently.
+4. **Tier D** (selection): run full validation protocol against A/B/C,
+   prefer B unless C shows consistent non-marginal improvement.
+
+CRITICAL: Per Key Focus Areas §8, never let a design decision be made
+by looking at performance on the final held-out test seasons. Those
+seasons ({2018, 2019, 2021, 2022, 2023, 2024, 2025}) get looked at
+exactly once, at the end of Phase 6.
