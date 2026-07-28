@@ -1,0 +1,73 @@
+{
+  "loso_cv": {
+    "tier_a": {
+      "top1_accuracy": 0.3225806451612903,
+      "top3_hit_rate": 0.4838709677419355,
+      "top5_hit_rate": 0.6451612903225806,
+      "spearman_mean": 0.3526613576753912,
+      "kendall_mean": 0.26224759279894644,
+      "total_years": 62
+    },
+    "tier_b": {
+      "top1_accuracy": 0.3387096774193548,
+      "top3_hit_rate": 0.5,
+      "top5_hit_rate": 0.6774193548387096,
+      "spearman_mean": 0.41020377243625206,
+      "kendall_mean": 0.3083565096591366,
+      "total_years": 62
+    },
+    "tier_c": {
+      "top1_accuracy": 0.3548387096774194,
+      "top3_hit_rate": 0.5483870967741935,
+      "top5_hit_rate": 0.6129032258064516,
+      "spearman_mean": 0.40371787693215244,
+      "kendall_mean": 0.3034369214641932,
+      "total_years": 62
+    }
+  },
+  "expanding_window_cv": {
+    "tier_b": {
+      "top1_accuracy": 0.36538461538461536,
+      "top3_hit_rate": 0.5384615384615384,
+      "top5_hit_rate": 0.6153846153846154,
+      "spearman_mean": 0.3855898112900424,
+      "kendall_mean": 0.28800343079137736,
+      "total_years": 52
+    }
+  },
+  "final_heldout_eval": {
+    "tier_a": {
+      "top1_accuracy": 0.14285714285714285,
+      "top3_hit_rate": 0.42857142857142855,
+      "top5_hit_rate": 0.5714285714285714,
+      "spearman_mean": 0.4683727398758535,
+      "kendall_mean": 0.3405313067626863,
+      "total_years": 7
+    },
+    "tier_b": {
+      "top1_accuracy": 0.14285714285714285,
+      "top3_hit_rate": 0.14285714285714285,
+      "top5_hit_rate": 0.42857142857142855,
+      "spearman_mean": 0.5229166550371106,
+      "kendall_mean": 0.37691935252698033,
+      "total_years": 7
+    },
+    "tier_c": {
+      "top1_accuracy": 0.2857142857142857,
+      "top3_hit_rate": 0.2857142857142857,
+      "top5_hit_rate": 0.42857142857142855,
+      "spearman_mean": 0.5578920269722313,
+      "kendall_mean": 0.4010799482646007,
+      "total_years": 7
+    }
+  },
+  "held_out_seasons": [
+    2018,
+    2019,
+    2021,
+    2022,
+    2023,
+    2024,
+    2025
+  ]
+}

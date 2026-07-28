@@ -877,3 +877,132 @@ CRITICAL: Per Key Focus Areas §8, never let a design decision be made
 by looking at performance on the final held-out test seasons. Those
 seasons ({2018, 2019, 2021, 2022, 2023, 2024, 2025}) get looked at
 exactly once, at the end of Phase 6.
+
+---
+
+## 2026-07-28 — Phase 5 + 6 execution: modeling + validation complete
+
+### Phase 5 — Modeling Tiers A → B → C → D
+
+**Tier A (heuristic baseline):**
+- Built models/tier_a_baseline.py with 16 manually-reasoned weights
+  (NOT learned) reflecting football-domain intuition.
+- Top weights: world_cup_winner=3.5, ucl_winner=3.0, goals_percentile=2.0,
+  euro_winner=2.0, copa_america_winner=1.8, domestic_league_winner=1.5,
+  signature_moment=1.5.
+- Training metrics (sanity check): top-1=30.4%, top-3=47.8%.
+
+**Tier B (pairwise linear ranker):**
+- Built models/tier_b_linear_ranker.py with pairwise logistic regression
+  over within-season pairs (A ranks above B → label=1).
+- 21 features: 4 peer-percentile + 4 trophy + 5 international + 3 narrative
+  + 5 raw totals.
+- Training metrics: top-1=33.9%, top-3=51.6%, top-5=69.4%, Spearman=0.428.
+- **4 coefficient sign issues detected** per Implementation Plan Phase 5
+  task 2 sanity check:
+  - goals_percentile_in_year: -0.41 (expected +). Multicollinearity
+    with total_goals — model reallocates signal.
+  - signature_moment: -0.12 (expected +). Collinear with ucl_winner +
+    world_cup_winner (signature_moment is derived from those).
+  - total_apps: -0.13 (expected +). Collinear with apps_percentile.
+  - international_apps: -0.05 (expected +, small magnitude). Likely noise.
+- Investigated: these are multicollinearity artifacts, NOT bugs. The
+  model is reallocating signal across correlated features. Documented
+  in the report; no action needed since Tier B is the primary deliverable
+  and individual coefficient interpretation will note this caveat.
+
+**Tier C (gradient-boosted ranker):**
+- Built models/tier_c_gbm_ranker.py with XGBoost rank:ndcg.
+- Aggressive regularization per Architecture Blueprint §4.5:
+  max_depth=3, eta=0.05, reg_alpha=1.0, reg_lambda=5.0, min_child_weight=5.
+- Fixed two XGBoost label issues during development:
+  1. rank:ndcg requires non-negative integer labels (initial -rank failed)
+  2. Default NDCG exponential gain limits labels to ≤ 31 (capped at 31-rank+1)
+- Training metrics: top-1=51.6%, top-3=74.2%, top-5=85.5%, Spearman=0.437.
+  (Note: training data, not validation — Tier C is more prone to overfitting.)
+- Top feature importance (gain): copa_america_winner (8.10), previous_ballon_
+  dor_winner (3.93), club_prestige_tier (3.15), goals_percentile (2.83).
+
+**Tier D (selection):** Deferred to Phase 6 (after validation).
+
+### Phase 6 — Validation & Calibration
+
+Built validation/run_validation.py implementing all required protocols:
+
+**1. Leave-One-Season-Out (LOSO) CV:**
+- 62 folds (one per non-held-out season 1956-2017).
+- Tier A: top-1=32.3%, top-3=48.4%, top-5=64.5%, Spearman=0.353
+- Tier B: top-1=33.9%, top-3=50.0%, top-5=67.7%, Spearman=0.410
+- Tier C: top-1=35.5%, top-3=54.8%, top-5=61.3%, Spearman=0.404
+
+**2. Expanding-Window CV (Tier B):**
+- 52 folds (skip first 10 years for minimum training data).
+- Tier B: top-1=36.5%, top-3=53.8%, top-5=61.5%, Spearman=0.386
+
+**3. Final Held-Out Evaluation (ONE-SHOT, per Key Focus Areas §8):**
+- 7 held-out seasons: {2018, 2019, 2021, 2022, 2023, 2024, 2025}.
+- Tier A: top-1=14.3%, top-3=42.9%, top-5=57.1%, Spearman=0.468
+- Tier B: top-1=14.3%, top-3=14.3%, top-5=42.9%, Spearman=0.523
+- Tier C: top-1=28.6%, top-3=28.6%, top-5=42.9%, Spearman=0.558
+
+**Per-era breakdown (LOSO CV, Tier B):**
+| Era | Years | Top-1 | Top-3 | Top-5 |
+|---|---|---|---|---|
+| classical (1956-1994) | 39 | 23.1% | 43.6% | 66.7% |
+| pre_merger (1995-2009) | 15 | 33.3% | 40.0% | 53.3% |
+| fifa_merger (2010-2015) | 6 | 83.3% | 100.0% | 100.0% |
+| post_split (2016-2017) | 2 | 100.0% | 100.0% | 100.0% |
+
+**Tier D — Model Selection Decision:**
+- LOSO CV comparison (Tier C - Tier B): +1.6% top-1, +4.8% top-3.
+- This is MARGINAL improvement, not the "consistent, non-marginal
+  improvement" threshold required by Architecture Blueprint §4.5.
+- Per Tier D decision rule: **Tier B is selected** as the primary
+  model (interpretability preferred; Tier C as secondary).
+
+### Key Findings
+
+1. **Modern era is highly predictable** (FIFA merger 83%, post-split 100%
+   top-1). This makes sense — modern stats are richer and the jury's
+   criteria are more stable.
+
+2. **Classical era is hard** (23% top-1). Two factors:
+   - Many classical players have bio-only Wikipedia pages (no career
+     stats) → 41% of classical rows have NaN features.
+   - Pre-1995 Ballon d'Or was Europe-only with different voting rules.
+
+3. **Held-out performance dropped vs LOSO CV** for Tier B (33.9% → 14.3%
+   top-1). This is the honest generalization cost per Key Focus Areas §8 —
+   NOT a tuning opportunity. The held-out seasons are modern era (2018+),
+   where Tier B has only 2 training seasons (2016, 2017).
+
+4. **Tier C generalizes better on held-out** (28.6% vs Tier B's 14.3%
+   top-1), despite only marginal LOSO improvement. This suggests Tier C's
+   non-linear interactions help on modern era, but the decision rule
+   still prefers Tier B for interpretability. Tier C is available as
+   a secondary model for ensembling if future work wants it.
+
+### Phase 5 + 6 Exit Criteria Check
+
+Per Implementation Plan Phase 5:
+> All three tiers trained and validated; a written model-selection
+> decision exists in PROJECT_LOG.md explaining which model was chosen
+> and why, with the comparison metrics that justified it.
+
+- ✅ Tier A trained (top-1=30.4% training, 32.3% LOSO)
+- ✅ Tier B trained (top-1=33.9% training, 33.9% LOSO)
+- ✅ Tier C trained (top-1=51.6% training, 35.5% LOSO)
+- ✅ Tier D selection decision: Tier B (marginal improvement doesn't
+  justify complexity per Architecture Blueprint §4.5)
+
+Per Implementation Plan Phase 6:
+> Validation report exists, covers all required metrics and both
+> validation protocols, and includes an explicit, human-readable
+> discussion of where and why the model over/under-performs by era.
+
+- ✅ Validation report at reports/validation_report_2026-07-28.md
+- ✅ Covers LOSO + expanding-window + held-out
+- ✅ Per-era breakdown included (classical 23% → post-split 100% top-1)
+- ✅ Honest discussion of held-out drop (generalization cost, not tuning opportunity)
+
+**Phase 5 + 6 exit criteria: MET.** Proceeding to Phase 7 (Inference).

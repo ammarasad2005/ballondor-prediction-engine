@@ -1,0 +1,47 @@
+{
+  "tier": "B",
+  "model": "pairwise_logistic_regression",
+  "features_used": [
+    "goals_percentile_in_year",
+    "assists_percentile_in_year",
+    "apps_percentile_in_year",
+    "minutes_percentile_in_year",
+    "ucl_winner",
+    "ucl_runner_up",
+    "domestic_league_winner",
+    "domestic_league_runner_up",
+    "world_cup_winner",
+    "world_cup_runner_up",
+    "euro_winner",
+    "copa_america_winner",
+    "international_tournament_year",
+    "signature_moment",
+    "club_prestige_tier",
+    "previous_ballon_dor_winner",
+    "total_goals",
+    "total_assists",
+    "total_apps",
+    "international_goals",
+    "international_apps"
+  ],
+  "training_pairs": 52280,
+  "training_pair_accuracy": 0.6436687069625096,
+  "training_yearly_metrics": {
+    "top1_accuracy": 0.3387096774193548,
+    "top3_hit_rate": 0.5161290322580645,
+    "top5_hit_rate": 0.6935483870967742,
+    "spearman_mean": 0.4284246510859495,
+    "total_years": 62
+  },
+  "sign_issues_count": 4,
+  "held_out_seasons": [
+    2018,
+    2019,
+    2021,
+    2022,
+    2023,
+    2024,
+    2025
+  ],
+  "note": "Held-out seasons NOT evaluated here \u2014 deferred to Phase 6 final eval per Key Focus Areas \u00a78."
+}

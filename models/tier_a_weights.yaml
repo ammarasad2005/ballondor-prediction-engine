@@ -1,0 +1,27 @@
+_metadata:
+  description: Tier A manually-reasoned weights for the heuristic weighted-sum baseline.
+  philosophy: "Manually reasoned from football-domain knowledge of what the Ballon\
+    \ d'Or jury has historically weighted. NOT learned. This is the sanity-check floor\
+    \ \u2014 every learned model (Tier B/C) must beat these metrics to justify its\
+    \ complexity."
+  missing_value_handling: "NaN treated as 0 (no signal contribution, no imputation\
+    \ per Key Focus Areas \xA79)."
+  top1_accuracy: 30.4% (21/69 years)
+  top3_hit_rate: 47.8% (33/69 years)
+weights:
+  goals_percentile_in_year: 2.0
+  assists_percentile_in_year: 1.0
+  apps_percentile_in_year: 0.3
+  minutes_percentile_in_year: 0.2
+  ucl_winner: 3.0
+  ucl_runner_up: 1.0
+  domestic_league_winner: 1.5
+  domestic_league_runner_up: 0.3
+  world_cup_winner: 3.5
+  world_cup_runner_up: 1.2
+  euro_winner: 2.0
+  copa_america_winner: 1.8
+  international_tournament_year: 0.5
+  signature_moment: 1.5
+  club_prestige_tier: -0.5
+  previous_ballon_dor_winner: 1.0

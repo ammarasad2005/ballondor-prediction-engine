@@ -1,0 +1,73 @@
+{
+  "model_path": "/home/z/my-project/ballondor-engine/models/tier_c_model.json",
+  "feature_order": [
+    "goals_percentile_in_year",
+    "assists_percentile_in_year",
+    "apps_percentile_in_year",
+    "minutes_percentile_in_year",
+    "ucl_winner",
+    "ucl_runner_up",
+    "domestic_league_winner",
+    "domestic_league_runner_up",
+    "world_cup_winner",
+    "world_cup_runner_up",
+    "euro_winner",
+    "copa_america_winner",
+    "international_tournament_year",
+    "signature_moment",
+    "club_prestige_tier",
+    "previous_ballon_dor_winner",
+    "total_goals",
+    "total_assists",
+    "total_apps",
+    "international_goals",
+    "international_apps"
+  ],
+  "params": {
+    "objective": "rank:ndcg",
+    "eval_metric": "ndcg",
+    "max_depth": 3,
+    "eta": 0.05,
+    "subsample": 0.8,
+    "colsample_bytree": 0.8,
+    "reg_alpha": 1.0,
+    "reg_lambda": 5.0,
+    "min_child_weight": 5,
+    "random_state": 20260728,
+    "verbosity": 0
+  },
+  "num_boost_round": 200,
+  "training_metrics": {
+    "top1_accuracy": 0.5161290322580645,
+    "top3_hit_rate": 0.7419354838709677,
+    "top5_hit_rate": 0.8548387096774194,
+    "spearman_mean": 0.437106564268362,
+    "total_years": 62
+  },
+  "feature_importance_gain": {
+    "goals_percentile_in_year": 2.8304083347320557,
+    "apps_percentile_in_year": 0.8033637404441833,
+    "ucl_winner": 1.4987882375717163,
+    "ucl_runner_up": 1.2051756381988525,
+    "domestic_league_winner": 1.0026215314865112,
+    "world_cup_winner": 1.6478933095932007,
+    "euro_winner": 1.0677562952041626,
+    "copa_america_winner": 8.097417831420898,
+    "international_tournament_year": 0.4350539445877075,
+    "club_prestige_tier": 3.152132511138916,
+    "previous_ballon_dor_winner": 3.9303665161132812,
+    "total_goals": 2.7157399654388428,
+    "total_apps": 0.9186900854110718,
+    "international_goals": 1.4988716840744019,
+    "international_apps": 0.8027536273002625
+  },
+  "held_out_seasons": [
+    2018,
+    2019,
+    2021,
+    2022,
+    2023,
+    2024,
+    2025
+  ]
+}
