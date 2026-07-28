@@ -46,30 +46,56 @@ See `01_ARCHITECTURE_BLUEPRINT.md` §5. Key directories:
 
 | Phase | Description | Status |
 |---|---|---|
-| 0 | Environment & scope setup | in progress |
-| 1 | Ground truth backbone | pending |
-| 2 | Data acquisition | pending |
-| 3 | Entity resolution | pending |
-| 4 | Feature engineering | pending |
-| 5 | Modeling (Tiers A→D) | pending |
-| 6 | Validation & calibration | pending |
-| 7 | Inference + explanation | pending |
-| 8 | Web handoff doc | pending (out of scope for this build) |
+| 0 | Environment & scope setup | ✅ complete |
+| 1 | Ground truth backbone | ✅ complete (2004 rows, 1956-2025, 100% cross-verified) |
+| 2 | Data acquisition | ✅ complete (522 players with stats, 645 trophy rows) |
+| 3 | Entity resolution | ✅ complete (532 resolved, 302 documented gaps, 0 unresolved) |
+| 4 | Feature engineering | ✅ complete (2004 rows × 45 features across 7 families) |
+| 5 | Modeling (Tiers A→D) | ✅ complete (Tier B selected as primary per Tier D decision rule) |
+| 6 | Validation & calibration | ✅ complete (LOSO + expanding-window + one-shot held-out eval) |
+| 7 | Inference + explanation | ✅ complete (CLI + JSON contract + per-candidate explanations) |
+| 8 | Web handoff doc | ✅ complete (WEB_LAYER_HANDOFF.md — web app itself out of scope) |
+
+## Key results
+
+**Validation metrics (LOSO CV, 62 folds):**
+- Tier A (heuristic): 32.3% top-1, 48.4% top-3
+- Tier B (pairwise linear, **selected**): 33.9% top-1, 50.0% top-3, 0.410 Spearman
+- Tier C (XGBoost): 35.5% top-1, 54.8% top-3, 0.404 Spearman
+
+**Final held-out evaluation (one-shot, 7 seasons 2018-2025):**
+- Tier A: 14.3% top-1, 42.9% top-3
+- Tier B: 14.3% top-1, 14.3% top-3
+- Tier C: 28.6% top-1, 28.6% top-3
+
+**Per-era breakdown (LOSO CV, Tier B):**
+- Classical (1956-1994): 23.1% top-1 (limited by 42% NaN features from bio-only Wikipedia pages)
+- Pre-merger (1995-2009): 33.3% top-1
+- FIFA merger (2010-2015): 83.3% top-1 (highly predictable)
+- Post-split (2016-2017): 100.0% top-1
 
 ## Running
 
-Phase 0+ — environment setup only at this point. Once Phase 7 lands:
-
 ```bash
-python -m ballondor predict --season 2026
-```
+# Predict a season
+python inference/predict_season.py --season 2024 --top-n 10
 
-Outputs the JSON contract from Architecture Blueprint §4.7 (ranked candidates
-with per-candidate top-contributing-features breakdown).
+# Save prediction to JSON
+python inference/predict_season.py --season 2024 --output pred.json
+
+# Generate human-readable explanation
+python inference/explain.py --input pred.json --top-n 5
+
+# Run full validation (LOSO + expanding-window + held-out)
+python validation/run_validation.py
+```
 
 ## Reference documents
 
-- `upload/01_ARCHITECTURE_BLUEPRINT.md` — system design, schemas, dir structure
-- `upload/02_IMPLEMENTATION_PLAN.md` — phased build order with exit criteria
-- `upload/03_REQUIREMENTS.md` — data + tech stack requirements
-- `upload/04_KEY_FOCUS_AREAS.md` — 10 highest-risk silent-failure areas
+- `docs/specs/01_ARCHITECTURE_BLUEPRINT.md` — system design, schemas, dir structure
+- `docs/specs/02_IMPLEMENTATION_PLAN.md` — phased build order with exit criteria
+- `docs/specs/03_REQUIREMENTS.md` — data + tech stack requirements
+- `docs/specs/04_KEY_FOCUS_AREAS.md` — 10 highest-risk silent-failure areas
+- `PROJECT_LOG.md` — running audit log (1134 lines) covering every decision
+- `WEB_LAYER_HANDOFF.md` — handoff doc for future web app build
+- `reports/validation_report_2026-07-28.md` — full validation report
