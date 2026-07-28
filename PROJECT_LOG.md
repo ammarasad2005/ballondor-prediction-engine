@@ -408,3 +408,31 @@ Per Implementation Plan Phase 1:
 **Phase 1 exit criterion: MET.** Proceeding to Phase 2 (Data
 Acquisition: Individual Stats, Trophies, Narrative) on next session
 segment.
+
+### Plan for Phase 2
+
+1. **Modern-era stats scraper (2014-15 onward)**: target goals/assists/
+   apps/minutes per competition (league + UCL + intl.) from Wikipedia
+   player career stats tables (confirmed working in Phase 0). xG/xA
+   blocked by Cloudflare on fbref — will attempt `curl_cffi` once
+   before declaring permanent gap per Key Focus Areas §9.
+2. **Classical-era stats scraper (1956-2014)**: same source (Wikipedia
+   player pages), simplified target per P4 (goals/assists/apps/position).
+   Document assist gaps pre-1990s as known limitation.
+3. **Trophy/competition results scraper**: Wikipedia per-competition
+   pages (UCL final, league title winners, international tournaments)
+   per Phase 0 verification.
+4. **Narrative/media signal collector**: best-effort, partially manual.
+   Any agent-inferred flag will be logged as such per Implementation
+   Plan Phase 2 task 4.
+5. **All scrapers idempotent + incremental**: keyed on (season_id,
+   player_name_raw), skip existing keys on rerun. Verify resumability
+   by deliberately interrupting and re-running each scraper once.
+
+**Held-out test set confirmation:** Per Architecture Blueprint §4.6
+and Key Focus Areas §8, the most recent 6-8 complete seasons are
+reserved for one-shot final evaluation. Will formalize as
+{2018, 2019, 2021, 2022, 2023, 2024, 2025} (7 seasons, excluding 2020
+COVID cancellation). These will NOT be touched in any feature
+selection, hyperparameter tuning, or model-selection decision until
+the single final Phase 6 evaluation pass.
