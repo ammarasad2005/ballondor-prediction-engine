@@ -436,3 +436,40 @@ reserved for one-shot final evaluation. Will formalize as
 COVID cancellation). These will NOT be touched in any feature
 selection, hyperparameter tuning, or model-selection decision until
 the single final Phase 6 evaluation pass.
+
+---
+
+## 2026-07-28 — GitHub repository created
+
+Per user request, the project has been published to GitHub with
+sequential phase-by-phase commit history preserved:
+
+**Repository URL:** https://github.com/ammarasad2005/ballondor-prediction-engine
+
+**Commit history (sequential, oldest first):**
+1. `458b899` — Phase 0: environment & scope setup
+2. `6a36d60` — Phase 1: ground truth backbone complete (1956-2025, 69 ceremonies)
+3. `1ee46d9` — Phase 2 (in progress): stats scraper scaffolding + player page fetch
+
+**Excluded from repo (via .gitignore) per size/reproducibility hygiene:**
+- `data/raw/**/pages_api/` — Wikipedia HTML/JSON page caches (~175 MB total),
+  reproducible by running the scrapers. Locally retained for development.
+- `data/raw/**/pages/` — same, for the main-page HTML cache.
+- `data/raw/_phase1_*.html` — early exploration files.
+- `data/raw/stats/_failed_lookups.txt` and `_fetch_log.txt` — transient.
+- `__pycache__/`, `.env`, IDE files, etc.
+
+**Included in repo:**
+- All Python code (scrapers, entity_resolution modules)
+- All shell helper scripts (curl-based fetchers)
+- Processed deliverables: ground_truth.parquet, eval_windows.yaml, QA reports
+- Parsed raw output: nominees_raw.jsonl (2004 rows)
+- Full audit log: PROJECT_LOG.md (this file)
+- Configuration: configs/run_config.yaml
+- Spec documents: docs/specs/{01,02,03,04}_*.md (so repo is self-contained)
+- README.md with project overview
+
+**Authentication note:** A temporary GitHub PAT (provided by user, expires
+in 24h) was used to create the repo and push. The PAT has been removed
+from local git config (remote URL is now the clean HTTPS form). Future
+pushes will require either a fresh PAT or SSH key setup.
