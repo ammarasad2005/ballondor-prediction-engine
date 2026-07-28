@@ -1,0 +1,200 @@
+# =============================================================================
+# Ballon d'Or Prediction Engine — Run Configuration
+# Single source of truth for a pipeline run (Architecture Blueprint §5).
+# Every value here is intended to be overridable; downstream code reads from
+# this file rather than hardcoding constants, so a "run" is reproducible by
+# pointing the CLI at a specific config snapshot.
+# =============================================================================
+
+project:
+  name: ballondor-engine
+  description: Learning-to-rank system modeling Ballon d'Or jury decisions, 1956–present
+  # Repo root resolution — all paths below are relative to this.
+  repo_root: /home/z/my-project/ballondor-engine
+
+# -----------------------------------------------------------------------------
+# Era boundaries (Architecture Blueprint §4.1)
+# These are deliberately explicit per year, not a uniform rule. The
+# eval_window table in data/processed/eval_windows.yaml holds the per-year
+# eval_period_start / eval_period_end dates, cross-verified against at
+# least two independent sources per Implementation Plan Phase 1 task 2.
+# -----------------------------------------------------------------------------
+eras:
+  # Pre-1995: Ballon d'Or was Europe-only (eligible = European players OR
+  # players based at European clubs, depending on sub-period — see
+  # eligibility_regime per year).
+  classical_start_year: 1956
+  eligibility_global_start_year: 1995    # post-1995: open to all players worldwide
+  # 2010-2015: FIFA Ballon d'Or merger window (merged with FIFA World Player)
+  fifa_merger_start_year: 2010
+  fifa_merger_end_year: 2015
+  # 2016+: France Football only again; 2020 cancelled (COVID) — flagged as gap, not error
+  cancelled_years: [2020]
+  # Modern era = advanced metrics *should* be available; reality is fbref is
+  # Cloudflare-blocked in this sandbox (see PROJECT_LOG Phase 0), so the
+  # operational modern-era stat depth = goals/assists/apps/minutes (same as
+  # classical, but with more reliable assist recording and full per-90
+  # normalization). xG/xA deferred — see gap log.
+  modern_era_start_season: "2014"   # 2014-15 season = first season under modern scope
+
+# -----------------------------------------------------------------------------
+# Held-out test set (Architecture Blueprint §4.6, Key Focus Areas §8)
+# These seasons are looked at EXACTLY ONCE, at the end, in the final Phase 6
+# evaluation pass. Never used in any feature selection, hyperparameter tuning,
+# or model-selection decision. If you find yourself wanting to peek early,
+# re-read Key Focus Areas §8 and STOP.
+# -----------------------------------------------------------------------------
+held_out:
+  # Most recent 6-8 complete seasons, reserved for one-shot final eval.
+  # Will be set after Phase 1 ground-truth QA confirms the actual most-recent
+  # available season; placeholder values here are the current target.
+  test_seasons: ["2023", "2022", "2021", "2019", "2018", "2017", "2016"]
+  test_season_count_target: 7
+  # Hard rule: any code path that touches these season IDs outside of the
+  # final evaluation pass should fail loud, not silently proceed.
+  enforce_no_peek: true
+
+# -----------------------------------------------------------------------------
+# Validation protocol (Architecture Blueprint §4.6)
+# -----------------------------------------------------------------------------
+validation:
+  primary_protocol: loso           # leave-one-season-out
+  secondary_protocol: expanding    # train only on seasons < year Y, predict Y
+  metrics:
+    - top_1_accuracy
+    - top_3_hit_rate
+    - top_5_hit_rate
+    - spearman_rho
+    - kendall_tau
+  report_by_era: true              # classical vs modern — never blend to a single number
+  random_seed: 20260728            # fixed seed for any stochastic step (Tier C)
+
+# -----------------------------------------------------------------------------
+# Modeling tiers (Architecture Blueprint §4.5)
+# Built in strict order; each tier must justify itself before the next is started.
+# -----------------------------------------------------------------------------
+models:
+  tier_a:
+    enabled: true
+    description: "Explicit weighted-sum baseline, manually reasoned weights, non-learned"
+    weights_path: models/tier_a_weights.yaml   # to be populated in Phase 5
+  tier_b:
+    enabled: true
+    description: "Pairwise logistic linear ranker — primary deliverable per P3"
+    backend: sklearn.LogisticRegression
+    pair_strategy: within_season   # only pair candidates within the same season
+    regularization: l2
+    C: 1.0
+  tier_c:
+    enabled: true
+    description: "XGBoost rank:ndcg — only kept if it beats Tier B consistently across folds"
+    backend: xgboost
+    objective: rank:ndcg
+    eval_metric: ndcg
+    # Aggressive regularization defaults (small N ~ 300-350 rows per P3)
+    max_depth: 3
+    eta: 0.05
+    subsample: 0.8
+    colsample_bytree: 0.8
+    reg_alpha: 1.0    # L1
+    reg_lambda: 5.0   # L2
+    early_stopping_rounds: 50
+  tier_d:
+    description: "Selection / light ensemble — pick best-generalizing model"
+    decision_rule: "Prefer B unless C shows consistent non-marginal improvement across multiple folds"
+    allow_rank_average_ensemble: true
+
+# -----------------------------------------------------------------------------
+# Feature registry (Architecture Blueprint §4.4)
+# -----------------------------------------------------------------------------
+features:
+  registry_path: features/feature_registry.yaml   # populated in Phase 4
+  era_availability_tags: [modern_only, all_eras, classical_proxy_available]
+  missing_data_convention:
+    # Per Key Focus Areas §9 — gaps must be visible, never silently filled.
+    # Every feature column has a companion `<feature>_is_imputed` bool column
+    # that is True iff the value was deliberately filled (e.g., median-by-era)
+    # rather than sourced. Missing-and-not-imputed cells stay NaN.
+    imputed_flag_suffix: _is_imputed
+    missing_flag_suffix: _is_missing
+
+# -----------------------------------------------------------------------------
+# Data acquisition (Architecture Blueprint §4.2)
+# -----------------------------------------------------------------------------
+acquisition:
+  raw_dir: data/raw
+  interim_dir: data/interim
+  processed_dir: data/processed
+  # All scrapers MUST be idempotent: keyed on (season_id, player_name_raw),
+  # skip existing keys on rerun. This is a hard requirement, not a nicety —
+  # long autonomous sessions will hit transient failures and resume.
+  idempotent_key: [season_id, player_name_raw]
+  # Pacing — be polite, especially to Wikipedia which is the workhorse source.
+  request_delay_seconds: 1.0
+  max_retries: 3
+  backoff_factor: 2.0
+  user_agent: "BallonDorPredictBot/0.1 (research; contact: agent@local)"
+
+# -----------------------------------------------------------------------------
+# Source registry — populated during Phase 0 verification, updated as sources
+# are added or fall back during the build.
+# -----------------------------------------------------------------------------
+sources:
+  ground_truth:
+    primary:
+      name: wikipedia_ballon_dor
+      url: https://en.wikipedia.org/wiki/Ballon_d%27Or
+      access: requests   # plain HTTP works
+      verified_phase_0: true
+    secondary:
+      name: wikipedia_ballon_dor_by_year
+      url_template: https://en.wikipedia.org/wiki/{year}_Ballon_d%27Or
+      access: requests
+      verified_phase_0: pending   # to be tested in Phase 1
+  stats:
+    modern:
+      # PREFERRED: fbref for xG/xA + per-90 — but Cloudflare-blocked in this
+      # sandbox (Phase 0 finding). Will attempt curl_cffi / alternate mirror
+      # in Phase 2; if all fail, document gap and proceed with below fallback.
+      name: fbref
+      url: https://fbref.com/en/
+      access: playwright   # blocked; see note
+      verified_phase_0: false
+      blocked_reason: "Cloudflare 403 even via Playwright headless; will attempt curl_cffi in Phase 2"
+    fallback_modern:
+      # Wikipedia player pages: career stats table is reliable for
+      # goals/assists/apps by season, club, and competition tier. No xG/xA.
+      name: wikipedia_player_pages
+      url_template: https://en.wikipedia.org/wiki/{player_slug}
+      access: requests
+      verified_phase_0: true
+    classical:
+      # Same fallback for classical era — goals/assists/apps is the target
+      # per P4; assists pre-1990s are documented-gap-prone.
+      name: wikipedia_player_pages
+      access: requests
+      verified_phase_0: true
+  trophies:
+    primary:
+      name: wikipedia_competition_pages
+      url_templates:
+        ucl: https://en.wikipedia.org/wiki/{year}-{yr2}_UEFA_Champions_League
+        euro: https://en.wikipedia.org/wiki/UEFA_Euro_{year}
+        world_cup: https://en.wikipedia.org/wiki/{year}_FIFA_World_Cup
+        copa_america: https://en.wikipedia.org/wiki/{year}_Copa_América
+      access: requests
+      verified_phase_0: true
+  narrative:
+    # Best-effort, partially manual — see Implementation Plan Phase 2 task 4.
+    # Any agent-inferred flag MUST be logged as such.
+    name: agent_curated
+    access: manual_plus_search
+    verified_phase_0: n/a
+
+# -----------------------------------------------------------------------------
+# Logging / artifacts
+# -----------------------------------------------------------------------------
+logging:
+  project_log_path: PROJECT_LOG.md
+  reports_dir: reports
+  worklog_path: /home/z/my-project/worklog.md   # shared multi-agent log per system rules
