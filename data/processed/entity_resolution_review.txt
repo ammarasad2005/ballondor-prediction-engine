@@ -1,0 +1,16 @@
+# Entity Resolution Review File
+
+Generated: 2026-07-28T20:08:48.664294+00:00
+Total unique players: 835
+
+## Players needing manual review
+
+These are players where:
+- resolution_method = 'fuzzy' with score < 95 (low confidence)
+- resolution_method = 'failed' (no match found)
+- resolution_method = 'alias_needs_refetch' (alias points to a page not yet cached)
+
+| player_name_raw | method | status | fuzzy_score | fuzzy_candidate | resolved_slug |
+|---|---|---|---|---|---|
+
+Total needing review: 0

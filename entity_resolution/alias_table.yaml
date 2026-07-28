@@ -1,0 +1,21 @@
+_metadata:
+  description: Manual alias overrides for entity resolution. Maps ground_truth player_name_raw
+    to the Wikipedia page slug that contains their career stats.
+  usage: When a ground-truth player's name doesn't directly resolve to a stats page
+    (disambiguation page, mononym, transliteration variant), look up the canonical
+    Wikipedia slug here.
+  maintenance: Add entries as new disambiguation cases are discovered during Phase
+    3 fuzzy-match review.
+aliases:
+  Rodri: Rodri (footballer, born 1996)
+  Adriano: Adriano Leite Ribeiro
+  Ronaldo: Ronaldo (Brazilian footballer)
+  Ronaldinho: Ronaldinho
+  Pelé: Pelé
+  Xavi: Xavi Hernández
+  Marcelo: Marcelo Vieira
+  Koke: Koke (footballer, born 1992)
+  Jorginho: Jorginho (footballer, born December 1991)
+  Luis Díaz: Luis Díaz (footballer, born 1997)
+  Kim Min-jae: Kim Min-jae (footballer)
+  Nuno Mendes: Nuno Mendes (footballer, born 2002)

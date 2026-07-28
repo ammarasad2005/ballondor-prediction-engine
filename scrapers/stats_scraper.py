@@ -333,6 +333,53 @@ def find_international_career_table(soup: BeautifulSoup):
     return None
 
 
+def _parse_career_table_fallback(tbl) -> list[dict]:
+    """Fallback parser using BeautifulSoup directly when pd.read_html fails.
+
+    Used when the HTML has malformed attributes (e.g. colspan='2"') that
+    pd.read_html can't handle. This parser is less robust but handles
+    the common case of a stats table with rows like:
+      <tr><td>2023-24</td><td>Manchester City</td><td>35</td><td>27</td>...</tr>
+    """
+    rows: list[dict] = []
+    # Find all data rows (skip header rows)
+    for tr in tbl.find_all("tr"):
+        cells = tr.find_all(["td", "th"])
+        if not cells or len(cells) < 3:
+            continue
+        # Skip header rows (all th)
+        if all(c.name == "th" for c in cells):
+            continue
+        # First cell should be a season string
+        first = clean_text(cells[0].get_text())
+        if not first:
+            continue
+        season = normalize_season(first)
+        if season is None:
+            continue
+        # Skip aggregate rows
+        first_lower = first.lower()
+        if "total" in first_lower or "career" in first_lower:
+            continue
+        # Build a row with whatever cells we have
+        row = {
+            "season": season,
+            "season_raw": first,
+            "club": clean_text(cells[1].get_text()) if len(cells) > 1 else "",
+            "league_apps": parse_int_safe(cells[2].get_text()) if len(cells) > 2 else None,
+            "league_goals": parse_int_safe(cells[3].get_text()) if len(cells) > 3 else None,
+            "league_assists": None,
+            "league_minutes": None,
+            "continental_apps": None,
+            "continental_goals": None,
+            "continental_assists": None,
+            "continental_minutes": None,
+            "continental_competition": "",
+        }
+        rows.append(row)
+    return rows
+
+
 def parse_career_table(tbl) -> list[dict]:
     """Parse a senior career table into a list of season-row dicts.
 
@@ -345,13 +392,22 @@ def parse_career_table(tbl) -> list[dict]:
       league_minutes, continental_apps, continental_goals, continental_assists,
       continental_minutes, continental_competition
     """
+    # Pre-clean the HTML: fix malformed colspan/rowspan attributes that
+    # contain stray characters (e.g. colspan='2"' instead of '2').
+    # pd.read_html raises ValueError on these otherwise.
+    html_str = str(tbl)
+    html_str = re.sub(r'(colspan|rowspan)=["\']?(\d+)["\']?[^>]*', r'\1="\2"', html_str, flags=re.IGNORECASE)
+    html_str = re.sub(r'(colspan|rowspan)=["\'](\d+)[^"\']*', r'\1="\2"', html_str, flags=re.IGNORECASE)
+
     try:
-        parsed = pd.read_html(io.StringIO(str(tbl)))
+        parsed = pd.read_html(io.StringIO(html_str))
         if not parsed:
             return []
         df = parsed[0]
-    except ValueError:
-        return []
+    except Exception as e:
+        # If pd.read_html still fails, try a simpler approach: extract
+        # rows manually using BeautifulSoup
+        return _parse_career_table_fallback(tbl)
 
     # Drop fully-NaN rows
     df = df.dropna(how="all").reset_index(drop=True)
