@@ -49,6 +49,13 @@ FEATURE_DESCRIPTIONS = {
     "total_apps": "Total appearances across all club competitions",
     "international_goals": "Goals scored for national team",
     "international_apps": "Appearances for national team",
+    # xG/xA features (from Understat, modern era only)
+    "xg": "Expected goals (quality of chances, from Understat)",
+    "xa": "Expected assists (chance-creation value, from Understat)",
+    "npxg": "Non-penalty expected goals (excludes penalty xG)",
+    "xg_per90": "Expected goals per 90 minutes played",
+    "xa_per90": "Expected assists per 90 minutes played",
+    "xg_overperformance": "Goals minus xG (positive = clinical finishing)",
 }
 
 

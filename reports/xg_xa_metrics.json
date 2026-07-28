@@ -1,0 +1,70 @@
+{
+  "loso_cv": {
+    "tier_b_original": {
+      "top1_accuracy": 0.3387096774193548,
+      "top3_hit_rate": 0.5,
+      "top5_hit_rate": 0.6774193548387096,
+      "spearman_mean": 0.41020377243625206,
+      "kendall_mean": 0.3083565096591366,
+      "total_years": 62
+    },
+    "tier_b_expanded": {
+      "top1_accuracy": 0.3387096774193548,
+      "top3_hit_rate": 0.5,
+      "top5_hit_rate": 0.6774193548387096,
+      "spearman_mean": 0.40506601940584214,
+      "kendall_mean": 0.30431245897901593,
+      "total_years": 62
+    },
+    "tier_c_original": {
+      "top1_accuracy": 0.3548387096774194,
+      "top3_hit_rate": 0.5483870967741935,
+      "top5_hit_rate": 0.6129032258064516,
+      "spearman_mean": 0.40371787693215244,
+      "kendall_mean": 0.3034369214641932,
+      "total_years": 62
+    },
+    "tier_c_expanded": {
+      "top1_accuracy": 0.3548387096774194,
+      "top3_hit_rate": 0.532258064516129,
+      "top5_hit_rate": 0.6451612903225806,
+      "spearman_mean": 0.40349514847982704,
+      "kendall_mean": 0.30106073937261724,
+      "total_years": 62
+    }
+  },
+  "held_out_eval": {
+    "tier_b_original": {
+      "top1_accuracy": 0.14285714285714285,
+      "top3_hit_rate": 0.14285714285714285,
+      "top5_hit_rate": 0.42857142857142855,
+      "spearman_mean": 0.5229166550371106,
+      "kendall_mean": 0.37691935252698033,
+      "total_years": 7
+    },
+    "tier_b_expanded": {
+      "top1_accuracy": 0.14285714285714285,
+      "top3_hit_rate": 0.42857142857142855,
+      "top5_hit_rate": 0.42857142857142855,
+      "spearman_mean": 0.5068559130561187,
+      "kendall_mean": 0.3578097830709364,
+      "total_years": 7
+    },
+    "tier_c_original": {
+      "top1_accuracy": 0.2857142857142857,
+      "top3_hit_rate": 0.2857142857142857,
+      "top5_hit_rate": 0.42857142857142855,
+      "spearman_mean": 0.5578920269722313,
+      "kendall_mean": 0.4010799482646007,
+      "total_years": 7
+    },
+    "tier_c_expanded": {
+      "top1_accuracy": 0.2857142857142857,
+      "top3_hit_rate": 0.2857142857142857,
+      "top5_hit_rate": 0.2857142857142857,
+      "spearman_mean": 0.536305073079687,
+      "kendall_mean": 0.38457149599799884,
+      "total_years": 7
+    }
+  }
+}

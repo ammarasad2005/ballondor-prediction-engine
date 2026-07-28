@@ -34,6 +34,10 @@ FEATURES = [
     "signature_moment", "club_prestige_tier", "previous_ballon_dor_winner",
     "total_goals", "total_assists", "total_apps",
     "international_goals", "international_apps",
+    # xG/xA features (added per user request — sourced from Understat)
+    # These are NaN for non-modern era (pre-2014), which the model handles
+    # by treating NaN as 0 contribution (linear) or native NaN (XGBoost).
+    "xg", "xa", "npxg", "xg_per90", "xa_per90", "xg_overperformance",
 ]
 
 HELD_OUT_SEASONS = {2018, 2019, 2021, 2022, 2023, 2024, 2025}
