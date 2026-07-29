@@ -1,0 +1,27 @@
+{
+  "features": 39,
+  "held_out_eval": {
+    "tier_b": {
+      "top1": 0.2857142857142857,
+      "top3": 0.5714285714285714,
+      "top5": 0.5714285714285714,
+      "spearman": 0.5031642181695027,
+      "n": 7
+    },
+    "tier_c": {
+      "top1": 0.2857142857142857,
+      "top3": 0.2857142857142857,
+      "top5": 0.5714285714285714,
+      "spearman": 0.5680476278357387,
+      "n": 7
+    }
+  },
+  "before_audit": {
+    "tier_b": {
+      "top1": 0.143,
+      "top3": 0.143,
+      "top5": 0.429
+    }
+  },
+  "note": "ONE-SHOT held-out evaluation per Key Focus Areas \u00a78."
+}
