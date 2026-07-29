@@ -76,7 +76,9 @@ TIER_B_FEATURES = [
     "nation_prior_winners_count", "continent_prior_winners_count",
     "nation_years_since_last_winner", "league_visibility_tier",
     "position_rarity_score", "position_adjusted_xg_contribution",
-    # Total production (raw, but useful for within-year comparison since
+    "years_in_top_5", "first_time_nominee_flag",
+    "prior_nominations_count", "prior_winner_count", "years_since_new_winner",
+            # Total production (raw, but useful for within-year comparison since
     # peer-percentile already captures cross-era normalization)
     "total_goals",
     "total_assists",

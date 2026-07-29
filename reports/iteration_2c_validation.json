@@ -1,0 +1,26 @@
+{
+  "iteration": "2c",
+  "features_added": [
+    "years_in_top_5",
+    "first_time_nominee_flag",
+    "prior_nominations_count",
+    "prior_winner_count",
+    "years_since_new_winner"
+  ],
+  "total_features": 39,
+  "loso_cv": {
+    "tier_b": {
+      "top1_accuracy": 0.3870967741935484,
+      "top3_hit_rate": 0.6612903225806451,
+      "top5_hit_rate": 0.7741935483870968,
+      "spearman_mean": 0.4514046836390298
+    },
+    "tier_c": {
+      "top1_accuracy": 0.3870967741935484,
+      "top3_hit_rate": 0.6290322580645161,
+      "top5_hit_rate": 0.7419354838709677,
+      "spearman_mean": 0.42701765725884694
+    }
+  },
+  "note": "Held-out NOT evaluated \u2014 per Key Focus Areas \u00a78."
+}

@@ -1,0 +1,26 @@
+{
+  "iteration": "2b",
+  "features_added": [
+    "continental_goals_ratio",
+    "international_goals_per_app",
+    "tournament_year_boost",
+    "ucl_winner_goalscorer",
+    "wc_winner_goalscorer"
+  ],
+  "total_features": 39,
+  "loso_cv": {
+    "tier_b": {
+      "top1_accuracy": 0.3709677419354839,
+      "top3_hit_rate": 0.532258064516129,
+      "top5_hit_rate": 0.6935483870967742,
+      "spearman_mean": 0.4004369819966653
+    },
+    "tier_c": {
+      "top1_accuracy": 0.3225806451612903,
+      "top3_hit_rate": 0.532258064516129,
+      "top5_hit_rate": 0.6451612903225806,
+      "spearman_mean": 0.4026322002058177
+    }
+  },
+  "note": "Held-out NOT evaluated \u2014 per Key Focus Areas \u00a78."
+}
