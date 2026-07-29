@@ -1,0 +1,47 @@
+{
+  "iteration": "2a",
+  "features_added": [
+    "nation_prior_winners_count",
+    "continent_prior_winners_count",
+    "nation_years_since_last_winner",
+    "league_visibility_tier",
+    "position_rarity_score",
+    "position_adjusted_xg_contribution"
+  ],
+  "total_features": 34,
+  "loso_cv": {
+    "tier_b": {
+      "top1_accuracy": 0.3709677419354839,
+      "top3_hit_rate": 0.532258064516129,
+      "top5_hit_rate": 0.7419354838709677,
+      "spearman_mean": 0.3987377018261425
+    },
+    "tier_c": {
+      "top1_accuracy": 0.4032258064516129,
+      "top3_hit_rate": 0.5645161290322581,
+      "top5_hit_rate": 0.6290322580645161,
+      "spearman_mean": 0.39926673518882555
+    }
+  },
+  "comparison": {
+    "before_audit_fixes": {
+      "top1": 0.339,
+      "top3": 0.5,
+      "top5": 0.677,
+      "spearman": 0.41
+    },
+    "after_audit_fixes": {
+      "top1": 0.355,
+      "top3": 0.597,
+      "top5": 0.726,
+      "spearman": 0.407
+    },
+    "after_iter2a": {
+      "top1": 0.3709677419354839,
+      "top3": 0.532258064516129,
+      "top5": 0.7419354838709677,
+      "spearman": 0.3987377018261425
+    }
+  },
+  "note": "Held-out NOT evaluated \u2014 per Key Focus Areas \u00a78."
+}

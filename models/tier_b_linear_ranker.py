@@ -73,6 +73,9 @@ TIER_B_FEATURES = [
     "club_prestige_tier",
     "previous_ballon_dor_winner",
     "has_stats_data", "data_completeness_score",
+    "nation_prior_winners_count", "continent_prior_winners_count",
+    "nation_years_since_last_winner", "league_visibility_tier",
+    "position_rarity_score", "position_adjusted_xg_contribution",
     # Total production (raw, but useful for within-year comparison since
     # peer-percentile already captures cross-era normalization)
     "total_goals",

@@ -33,6 +33,9 @@ FEATURES = [
     "euro_winner", "copa_america_winner", "international_tournament_year",
     "club_prestige_tier", "previous_ballon_dor_winner",
     "has_stats_data", "data_completeness_score",
+    "nation_prior_winners_count", "continent_prior_winners_count",
+    "nation_years_since_last_winner", "league_visibility_tier",
+    "position_rarity_score", "position_adjusted_xg_contribution",
     "total_goals", "total_assists", "total_apps",
     "international_goals", "international_apps",
 ]
@@ -49,6 +52,12 @@ TIER_A_WEIGHTS = {
     "previous_ballon_dor_winner": 1.0,
     "has_stats_data": 0.5,
     "data_completeness_score": 0.3,
+    "nation_prior_winners_count": -0.5,  # fewer prior winners = more notable
+    "continent_prior_winners_count": -0.3,
+    "nation_years_since_last_winner": 0.5,  # long drought = more notable
+    "league_visibility_tier": -0.2,
+    "position_rarity_score": 0.5,  # rare position = boost
+    "position_adjusted_xg_contribution": 0.3,  # lower tier = penalty
 }
 
 

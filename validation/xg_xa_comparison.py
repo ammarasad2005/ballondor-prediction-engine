@@ -43,6 +43,9 @@ FEATURES_ORIGINAL = [
     "euro_winner", "copa_america_winner", "international_tournament_year",
     "club_prestige_tier", "previous_ballon_dor_winner",
     "has_stats_data", "data_completeness_score",
+    "nation_prior_winners_count", "continent_prior_winners_count",
+    "nation_years_since_last_winner", "league_visibility_tier",
+    "position_rarity_score", "position_adjusted_xg_contribution",
     "total_goals", "total_assists", "total_apps",
     "international_goals", "international_apps",
 ]
