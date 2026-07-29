@@ -52,39 +52,45 @@ HELD_OUT_SEASONS = {2018, 2019, 2021, 2022, 2023, 2024, 2025}
 # Excluding raw counts (which have cross-era inflation issues per Key Focus Area §7)
 # in favor of peer-percentile features. Including trophy flags (era-stable).
 TIER_B_FEATURES = [
-    # Peer-relative (era-comparable)
     "goals_percentile_in_year",
     "assists_percentile_in_year",
     "apps_percentile_in_year",
     "minutes_percentile_in_year",
-    # Trophy/team success
     "ucl_winner",
     "ucl_runner_up",
     "domestic_league_winner",
     "domestic_league_runner_up",
-    # International tournament
     "world_cup_winner",
     "world_cup_runner_up",
     "euro_winner",
     "copa_america_winner",
     "international_tournament_year",
-    # Narrative
-    "signature_moment",
     "club_prestige_tier",
     "previous_ballon_dor_winner",
-    "has_stats_data", "data_completeness_score",
-    "nation_prior_winners_count", "continent_prior_winners_count",
-    "nation_years_since_last_winner", "league_visibility_tier",
-    "position_rarity_score", "position_adjusted_xg_contribution",
-    "years_in_top_5", "first_time_nominee_flag",
-    "prior_nominations_count", "prior_winner_count", "years_since_new_winner",
-            # Total production (raw, but useful for within-year comparison since
-    # peer-percentile already captures cross-era normalization)
+    "has_stats_data",
+    "data_completeness_score",
+    "nation_prior_winners_count",
+    "continent_prior_winners_count",
+    "nation_years_since_last_winner",
+    "league_visibility_tier",
+    "position_rarity_score",
+    "position_adjusted_xg_contribution",
+    "years_in_top_5",
+    "first_time_nominee_flag",
+    "prior_nominations_count",
+    "prior_winner_count",
+    "years_since_new_winner",
     "total_goals",
     "total_assists",
     "total_apps",
     "international_goals",
     "international_apps",
+    "xg",
+    "xa",
+    "npxg",
+    "xg_per90",
+    "xa_per90",
+    "xg_overperformance",
 ]
 
 
