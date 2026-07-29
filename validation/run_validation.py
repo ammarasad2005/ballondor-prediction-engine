@@ -31,7 +31,8 @@ FEATURES = [
     "domestic_league_winner", "domestic_league_runner_up",
     "world_cup_winner", "world_cup_runner_up",
     "euro_winner", "copa_america_winner", "international_tournament_year",
-    "signature_moment", "club_prestige_tier", "previous_ballon_dor_winner",
+    "club_prestige_tier", "previous_ballon_dor_winner",
+    "has_stats_data", "data_completeness_score",
     "total_goals", "total_assists", "total_apps",
     "international_goals", "international_apps",
 ]
@@ -46,6 +47,8 @@ TIER_A_WEIGHTS = {
     "international_tournament_year": 0.5,
     "signature_moment": 1.5, "club_prestige_tier": -0.5,
     "previous_ballon_dor_winner": 1.0,
+    "has_stats_data": 0.5,
+    "data_completeness_score": 0.3,
 }
 
 

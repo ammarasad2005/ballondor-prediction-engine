@@ -72,6 +72,7 @@ TIER_B_FEATURES = [
     "signature_moment",
     "club_prestige_tier",
     "previous_ballon_dor_winner",
+    "has_stats_data", "data_completeness_score",
     # Total production (raw, but useful for within-year comparison since
     # peer-percentile already captures cross-era normalization)
     "total_goals",
@@ -266,9 +267,10 @@ def main() -> None:
         "euro_winner": "+",
         "copa_america_winner": "+",
         "international_tournament_year": "+",
-        "signature_moment": "+",
-        "club_prestige_tier": "-",  # tier 1 = best, so negative coefficient
+                "club_prestige_tier": "-",  # tier 1 = best, so negative coefficient
         "previous_ballon_dor_winner": "+",
+        "has_stats_data": "+",
+        "data_completeness_score": "+",
         "total_goals": "+",
         "total_assists": "+",
         "total_apps": "+",

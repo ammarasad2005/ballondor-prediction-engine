@@ -41,7 +41,8 @@ FEATURES_ORIGINAL = [
     "domestic_league_winner", "domestic_league_runner_up",
     "world_cup_winner", "world_cup_runner_up",
     "euro_winner", "copa_america_winner", "international_tournament_year",
-    "signature_moment", "club_prestige_tier", "previous_ballon_dor_winner",
+    "club_prestige_tier", "previous_ballon_dor_winner",
+    "has_stats_data", "data_completeness_score",
     "total_goals", "total_assists", "total_apps",
     "international_goals", "international_apps",
 ]

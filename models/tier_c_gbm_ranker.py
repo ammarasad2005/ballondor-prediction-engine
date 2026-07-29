@@ -57,6 +57,7 @@ TIER_C_FEATURES = [
     "signature_moment",
     "club_prestige_tier",
     "previous_ballon_dor_winner",
+    "has_stats_data", "data_completeness_score",
     "total_goals",
     "total_assists",
     "total_apps",
